@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Skincare & Cosmetics Tracker</title>
+<style>
+:root {
+  --blush:#f5c8c8; --rose:#d97070; --cream:#fdf6f0; --warm:#f9ece3;
+  --text:#3b2f2f; --muted:#7a6060; --border:#e8d8d8; --white:#fff;
+  --gold-light:#f5ead6; --gold:#8a6220;
+  --red:#c0392b; --red-light:#fde8e8;
+  --amber:#d4891a; --amber-light:#fef3e2;
+  --green:#2e7d52; --green-light:#e6f4ec;
+  --purple:#7b5ea7; --purple-light:#f0eaf8;
+  --grey:#6b7280; --grey-light:#f3f4f6;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Georgia',serif;background:var(--cream);color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+header{background:linear-gradient(135deg,#f9d9e3,#fce8e0 50%,#f4e8f9);padding:1.5rem 2rem 1.2rem;border-bottom:2px solid var(--blush);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem}
+header h1{font-size:1.6rem;color:var(--rose);letter-spacing:.03em}
+header p{color:var(--muted);font-size:.82rem;font-style:italic;margin-top:.2rem}
+.add-btn{background:var(--rose);color:#fff;border:none;border-radius:24px;padding:.55rem 1.2rem;font-size:.88rem;cursor:pointer;display:flex;align-items:center;gap:.45rem;white-space:nowrap;transition:opacity .2s}
+.add-btn:hover{opacity:.85}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.85rem;padding:1.2rem 2rem;background:var(--white);border-bottom:1px solid var(--border)}
+.stat-card{background:var(--warm);border-radius:12px;padding:.8rem .9rem;text-align:center;cursor:pointer;border:2px solid transparent;transition:border-color .2s,box-shadow .2s;user-select:none}
+.stat-card:hover{border-color:var(--rose);box-shadow:0 2px 10px rgba(217,112,112,.15)}
+.stat-card.active-stat{border-color:var(--rose);background:#fff0f0}
+.stat-card .num{font-size:1.8rem;font-weight:bold;color:var(--rose);line-height:1}
+.stat-card .lbl{font-size:.68rem;color:var(--muted);margin-top:.25rem;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── Controls ── */
+.controls{display:flex;flex-wrap:wrap;gap:.7rem;padding:1rem 2rem;background:var(--white);border-bottom:1px solid var(--border);align-items:center}
+.search-wrap{flex:1;min-width:180px;position:relative}
+.search-wrap input{width:100%;padding:.5rem .85rem .5rem 2.1rem;border:1.5px solid var(--border);border-radius:24px;font-size:.88rem;background:var(--cream);color:var(--text);outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--rose)}
+.search-wrap::before{content:"🔍";position:absolute;left:.7rem;top:50%;transform:translateY(-50%);font-size:.82rem;pointer-events:none}
+.filter-row{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+.filter-btn{padding:.38rem .8rem;border-radius:20px;border:1.5px solid var(--border);background:var(--white);color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.filter-btn:hover{border-color:var(--rose);color:var(--rose)}
+.filter-btn.active{background:var(--rose);border-color:var(--rose);color:#fff}
+.view-toggle{display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.view-btn{padding:.38rem .7rem;background:var(--white);border:none;cursor:pointer;font-size:1rem;color:var(--muted);transition:background .15s}
+.view-btn.active{background:var(--rose);color:#fff}
+
+/* ── Grid view ── */
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1rem;padding:1.3rem 2rem}
+.card{background:var(--white);border-radius:var(--radius);border:1.5px solid var(--border);padding:.95rem 1rem 1rem;display:flex;flex-direction:column;gap:.5rem;position:relative;transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(180,100,100,.13)}
+.card.discarded{opacity:.5;filter:grayscale(.6)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.4rem}
+.card-code{font-size:.68rem;color:var(--muted);font-family:'Courier New',monospace;background:var(--warm);padding:.18rem .45rem;border-radius:5px}
+.status-badge{font-size:.68rem;padding:.2rem .55rem;border-radius:20px;white-space:nowrap;font-weight:600}
+.status-Unopened{background:var(--green-light);color:var(--green)}
+.status-In-Use{background:var(--purple-light);color:var(--purple)}
+.status-Opened{background:var(--amber-light);color:var(--amber)}
+.status-Discarded{background:var(--grey-light);color:var(--grey)}
+.card-brand{font-size:.75rem;color:var(--rose);font-weight:bold;text-transform:uppercase;letter-spacing:.05em}
+.card-name{font-size:.92rem;line-height:1.3;font-weight:600}
+.card-cat{font-size:.73rem;color:var(--muted);font-style:italic}
+.meta-row{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.05rem}
+.meta-pill{font-size:.7rem;background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:.15rem .5rem;color:var(--muted)}
+.expiry-bar{padding:.4rem .55rem;border-radius:7px;font-size:.78rem;display:flex;align-items:center;gap:.45rem}
+.expiry-ok{background:var(--green-light);color:var(--green)}
+.expiry-soon{background:var(--amber-light);color:var(--amber)}
+.expiry-expired{background:var(--red-light);color:var(--red)}
+.expiry-pao{background:var(--gold-light);color:var(--gold)}
+.expiry-unknown{background:var(--warm);color:var(--muted)}
+.card-notes{font-size:.73rem;color:var(--muted);line-height:1.4;border-top:1px solid var(--border);padding-top:.45rem}
+
+/* Card action buttons */
+.card-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.1rem}
+.act-btn{padding:.28rem .65rem;border-radius:16px;border:1.5px solid var(--border);background:var(--white);font-size:.72rem;cursor:pointer;color:var(--muted);transition:all .18s;white-space:nowrap}
+.act-btn:hover{border-color:var(--rose);color:var(--rose)}
+.act-btn.act-inuse:hover{border-color:var(--purple);color:var(--purple)}
+.act-btn.act-discard:hover{border-color:var(--grey);color:var(--grey)}
+.act-btn.act-delete:hover{border-color:var(--red);color:var(--red)}
+.act-btn.act-restore:hover{border-color:var(--green);color:var(--green)}
+
+/* ── List view ── */
+.products-list{padding:0 2rem 2rem;overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+thead tr{background:linear-gradient(135deg,#f9d9e3,#fce8e0)}
+th{padding:.65rem .85rem;text-align:left;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--rose);white-space:nowrap}
+td{padding:.6rem .85rem;font-size:.82rem;border-top:1px solid var(--border);vertical-align:middle}
+tr.discarded td{opacity:.5}
+tr:hover td{background:var(--warm)}
+.tbl-actions{display:flex;gap:.35rem}
+.tbl-btn{padding:.22rem .55rem;border-radius:12px;border:1.5px solid var(--border);background:var(--white);font-size:.7rem;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap}
+.tbl-btn:hover{border-color:var(--rose);color:var(--rose)}
+.tbl-btn.inuse:hover{border-color:var(--purple);color:var(--purple)}
+.tbl-btn.discard:hover{border-color:var(--grey);color:var(--grey)}
+.tbl-btn.del:hover{border-color:var(--red);color:var(--red)}
+.tbl-btn.restore:hover{border-color:var(--green);color:var(--green)}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(60,30,30,.35);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:18px;padding:1.8rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.modal h2{font-size:1.2rem;color:var(--rose);margin-bottom:1.2rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.form-grid .full{grid-column:1/-1}
+label{font-size:.78rem;color:var(--muted);display:block;margin-bottom:.25rem}
+input[type=text],input[type=date],input[type=number],select,textarea{width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--rose)}
+textarea{resize:vertical;min-height:60px}
+.modal-btns{display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.2rem}
+.btn-primary{background:var(--rose);color:#fff;border:none;border-radius:20px;padding:.55rem 1.4rem;font-size:.88rem;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-cancel{background:transparent;border:1.5px solid var(--border);color:var(--muted);border-radius:20px;padding:.55rem 1.2rem;font-size:.88rem;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--rose);color:var(--rose)}
+
+/* ── Log panel ── */
+.log-toggle{position:fixed;bottom:1.5rem;right:1.5rem;z-index:50}
+.log-fab{background:var(--rose);color:#fff;border:none;border-radius:50%;width:46px;height:46px;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 16px rgba(217,112,112,.35);display:flex;align-items:center;justify-content:center;transition:opacity .2s}
+.log-fab:hover{opacity:.85}
+.log-panel{position:fixed;bottom:4.5rem;right:1.5rem;width:300px;max-height:360px;background:var(--white);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.14);border:1.5px solid var(--border);display:none;flex-direction:column;z-index:49;overflow:hidden}
+.log-panel.open{display:flex}
+.log-header{padding:.7rem 1rem;background:var(--warm);display:flex;justify-content:space-between;align-items:center;font-size:.82rem;font-weight:700;color:var(--rose);border-bottom:1px solid var(--border)}
+.log-body{overflow-y:auto;flex:1}
+.log-entry{padding:.55rem 1rem;border-bottom:1px solid var(--border);font-size:.76rem;line-height:1.4}
+.log-entry .log-time{color:var(--muted);font-size:.68rem}
+.log-entry .log-action{font-weight:600}
+.log-action-inuse{color:var(--purple)}
+.log-action-discard{color:var(--grey)}
+.log-action-delete{color:var(--red)}
+.log-action-add{color:var(--green)}
+.log-action-reopen{color:var(--amber)}
+.log-clear{padding:.5rem 1rem;text-align:center;font-size:.75rem;color:var(--muted);cursor:pointer;border-top:1px solid var(--border)}
+.log-clear:hover{color:var(--red)}
+.log-empty{padding:1.5rem;text-align:center;color:var(--muted);font-size:.8rem;font-style:italic}
+
+/* ── Misc ── */
+.no-results{text-align:center;color:var(--muted);padding:3rem;grid-column:1/-1;font-style:italic}
+.footer-bar{text-align:center;color:var(--muted);font-size:.76rem;padding:1.2rem;border-top:1px solid var(--border)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>✿ My Skincare & Cosmetics Tracker</h1>
+    <p>Personal product inventory — tap a stat card to filter</p>
+  </div>
+  <button class="add-btn" onclick="openModal()">＋ Add Product</button>
+</header>
+
+<div class="stats-grid" id="stats"></div>
+
+<div class="controls">
+  <div class="search-wrap"><input type="text" id="search" placeholder="Search brand, product, ingredient…"></div>
+  <div class="filter-row">
+    <div id="catFilters" style="display:flex;gap:.45rem;flex-wrap:wrap"></div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnGrid" onclick="setView('grid')" title="Grid view">⊞</button>
+      <button class="view-btn" id="btnList" onclick="setView('list')" title="List view">☰</button>
+    </div>
+  </div>
+</div>
+
+<div id="gridView" class="products-grid"></div>
+<div id="listView" class="products-list hidden"></div>
+
+<div class="footer-bar">✿ <span id="itemCount">0</span> products shown</div>
+
+<!-- Add Product Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>✿ Add New Product</h2>
+    <div class="form-grid">
+      <div>
+        <label>Code (e.g. SKIN-030)</label>
+        <input type="text" id="f-code" placeholder="AUTO">
+      </div>
+      <div>
+        <label>Category</label>
+        <select id="f-category">
+          <option value="Body Care">Body Care</option>
+          <option value="Eye Care">Eye Care</option>
+          <option value="Facial Cleanser">Facial Cleanser</option>
+          <option value="Facial Mask">Facial Mask</option>
+          <option value="Hair Care">Hair Care</option>
+          <option value="Hand Care">Hand Care</option>
+          <option value="Makeup Remover">Makeup Remover</option>
+          <option value="Moisturizer / Cream">Moisturizer / Cream</option>
+          <option value="Spot Treatment">Spot Treatment</option>
+          <option value="Sunscreen / Primer">Sunscreen / Primer</option>
+          <option value="Toner / Sheet Treatment">Toner / Sheet Treatment</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label>Brand</label>
+        <input type="text" id="f-brand" placeholder="e.g. LANEIGE">
+      </div>
+      <div>
+        <label>Quantity</label>
+        <input type="number" id="f-qty" value="1" min="1">
+      </div>
+      <div class="full">
+        <label>Product Name</label>
+        <input type="text" id="f-name" placeholder="Full product name">
+      </div>
+      <div>
+        <label>Size / Volume</label>
+        <input type="text" id="f-size" placeholder="e.g. 50 ml">
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="f-status">
+          <option value="Unopened">🔒 Unopened</option>
+          <option value="In Use">💜 In Use</option>
+          <option value="Opened">✨ Opened</option>
+        </select>
+      </div>
+      <div>
+        <label>MFG Date</label>
+        <input type="text" id="f-mfg" placeholder="e.g. 2025-06-01 or -">
+      </div>
+      <div>
+        <label>Expiry / PAO</label>
+        <input type="text" id="f-exp" placeholder="e.g. 2027-05-01 or PAO:12M">
+      </div>
+      <div class="full">
+        <label>Notes / Key Ingredients</label>
+        <textarea id="f-notes" placeholder="Key ingredients, shade, batch no…"></textarea>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="addProduct()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Log FAB -->
+<div class="log-toggle">
+  <button class="log-fab" onclick="toggleLog()" title="Activity log">📋</button>
+</div>
+<div class="log-panel" id="logPanel">
+  <div class="log-header">
+    <span>Activity Log</span>
+    <span style="cursor:pointer;color:var(--muted)" onclick="toggleLog()">✕</span>
+  </div>
+  <div class="log-body" id="logBody"></div>
+  <div class="log-clear" onclick="clearLog()">Clear log</div>
+</div>
+
+<script>
+const TODAY = new Date("2026-11-10");
+const SOON_DAYS = 180;
+const STORE_KEY = "skincare_tracker_v2";
+const LOG_KEY = "skincare_log_v2";
+
+// ── Seed data ──
+const SEED = [
+  {code:"SKIN-001",category:"Toner / Sheet Treatment",brand:"Torriden",name:"DIVE-IN Low Molecule Hyaluronic Acid Multi Pad (Refill Pouch)",size:"80 sheets / 160 ml",qty:1,status:"Unopened",mfg:"-",exp:"2028-08-07",notes:"5D low molecular hyaluronic acid, soothing daily moisture toner pads, vegan."},
+  {code:"HAIR-001",category:"Hair Care",brand:"L'Oréal Paris",name:"Elseve Extraordinary Oil Serum (Gold Edition)",size:"100 ml",qty:1,status:"In Use",mfg:"2025",exp:"2028-12-31",notes:"Infused with 6 precious floral oils; intense moisture, softness & shine."},
+  {code:"SKIN-002",category:"Moisturizer / Cream",brand:"LANEIGE",name:"Water Bank Blue Hyaluronic Moisture Cream",size:"50 ml",qty:1,status:"Unopened",mfg:"-",exp:"2029-05-05",notes:"Blue hyaluronic acid barrier & deep hydration, refillable jar format."},
+  {code:"SKIN-003",category:"Facial Cleanser",brand:"Lancôme",name:"Clarifique Pore Refining Cleansing Foam",size:"50 ml (Deluxe Sample)",qty:1,status:"In Use",mfg:"-",exp:"PAO:12M",notes:"Mousse nettoyante réduction des pores with French beech bud extract."},
+  {code:"SKIN-004",category:"Makeup Remover",brand:"YSL",name:"Top Secrets Demaquillant Express Eau Micellaire",size:"50 ml (Mini)",qty:1,status:"In Use",mfg:"-",exp:"PAO:6M",notes:"Instant makeup remover micellar water; no-rinse for face, eyes, lips."},
+  {code:"EYE-001",category:"Eye Care",brand:"Bausch + Lomb",name:"Biotrue Multi-Purpose Solution (Twin Pack)",size:"Large + Travel Pack",qty:2,status:"Unopened",mfg:"-",exp:"2027-08-01",notes:"Bio-inspired multi-purpose solution for soft contact lenses."},
+  {code:"BODY-001",category:"Body Care",brand:"Aveeno",name:"Skin Relief Moisturizing Cream with Cooling Action",size:"~312 g",qty:1,status:"In Use",mfg:"-",exp:"2028-07-03",notes:"Prebiotic triple oat complex + cooling menthol; restores extra-dry cracked skin."},
+  {code:"EYE-002",category:"Eye Care",brand:"Refresh (Allergan)",name:"Refresh Plus Lubricant Eye Drops",size:"Single-Use Vials",qty:4,status:"Unopened",mfg:"-",exp:"2027-04-30",notes:"Preservative-free sterile single-use containers for dry eyes. 4 boxes."},
+  {code:"SUN-001",category:"Sunscreen / Primer",brand:"Shu Uemura",name:"Unlimited Block:Booster Protective Moisture Primer (Sakura Pink)",size:"30 ml",qty:2,status:"Unopened",mfg:"-",exp:"PAO:12M",notes:"SPF 50+ PA+++ protective moisture primer, Sakura Pink shade. 2 boxes."},
+  {code:"SUN-002",category:"Sunscreen / Primer",brand:"Shu Uemura",name:"Unlimited Block:Booster Charged Up Primer (Icy Mauve)",size:"30 ml",qty:1,status:"Unopened",mfg:"-",exp:"PAO:12M",notes:"SPF 50+ PA+++ advanced skin boosting primer, Icy Mauve shade."},
+  {code:"SUN-003",category:"Sunscreen / Primer",brand:"Shu Uemura",name:"Unlimited Block:Booster Charged Up Primer (Nude Beige)",size:"30 ml",qty:1,status:"Unopened",mfg:"-",exp:"PAO:12M",notes:"SPF 50+ PA+++ advanced skin boosting primer, Nude Beige shade."},
+  {code:"SKIN-005",category:"Facial Mask",brand:"Lindsay",name:"Calendula Modeling Mask Cup Pack",size:"28 g",qty:1,status:"Unopened",mfg:"-",exp:"2027-04-29",notes:"Soothing & moisturizing calendula rubber cup mask."},
+  {code:"SKIN-006",category:"Spot Treatment",brand:"COSRX",name:"Acne Pimple Master Patch (Batch BN2319008)",size:"24 patches / pouch",qty:2,status:"Unopened",mfg:"2023-05-08",exp:"2026-05-07",notes:"Hydrocolloid blemish patches. Batch BN2319008. 48 patches total."},
+  {code:"SKIN-007",category:"Spot Treatment",brand:"COSRX",name:"Acne Pimple Master Patch (Batch BN2511001)",size:"24 patches / pouch",qty:2,status:"Unopened",mfg:"2025-03-13",exp:"2028-03-12",notes:"Hydrocolloid blemish patches. Batch BN2511001. 48 patches total."},
+  {code:"SKIN-008",category:"Spot Treatment",brand:"Bioré (Kao)",name:"Pore Strips Black Type for Nose",size:"Individually Wrapped Strips",qty:6,status:"Unopened",mfg:"-",exp:"~3Y unopened",notes:"Deep pore blackhead clearing strips, black sheet type."},
+  {code:"SKIN-009",category:"Spot Treatment",brand:"Olive Young Care Plus",name:"Cover Up Blemish Patch (Jeju Edition)",size:"64 patches / box",qty:1,status:"Unopened",mfg:"-",exp:"2029-03-01",notes:"Hydrocolloid spot patch; Jeju special edition box (64 patches)."},
+  {code:"BODY-002",category:"Body Care",brand:"L'Occitane",name:"Amande Huile de Douche (Almond Shower Oil)",size:"250 ml",qty:1,status:"In Use",mfg:"-",exp:"PAO:12M",notes:"Sweet almond oil cleanser; transforms into cleansing milk with water."},
+  {code:"SKIN-010",category:"Facial Mask",brand:"belif",name:"Super Knights - Purifying Clay Mask",size:"75 ml",qty:1,status:"In Use",mfg:"-",exp:"PAO:12M",notes:"Purifying complex, Napiers original formula; gently cleanses pores."},
+  {code:"HAND-001",category:"Hand Care",brand:"GRANHAND.",name:"Susie Salmon Hand Cream",size:"60 g",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Lemon, Black Currant, Cut Grass, Lily of Valley, Peach, White Musk."},
+  {code:"HAND-002",category:"Hand Care",brand:"Lisa Pollock",name:"Australian Artist Hand Cream",size:"50 ml",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Australian flora botanical artwork tube."},
+  {code:"HAND-003",category:"Hand Care",brand:"W.DRESSROOM",name:"Moisturizing Perfume Hand Cream - No. 30 White Musk",size:"50 ml",qty:1,status:"Unopened",mfg:"-",exp:"PAO:12M",notes:"With Shea Butter, Argan Oil, Ceramide; clean pure white musk fragrance."},
+  {code:"HAND-004",category:"Hand Care",brand:"to summer (观夏)",name:"Essential Oil Hand Cream - Magnolia / Ferguson Road",size:"Standard Tube",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Natural magnolia essential oil botanical nourishing hand treatment."},
+  {code:"HAND-005",category:"Hand Care",brand:"Aēsop",name:"Resurrection Aromatique Hand Balm",size:"75 ml",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Mandarin Rind, Rosemary Leaf, Cedar Atlas; rich nourishing hand & cuticle balm."},
+  {code:"BODY-003",category:"Body Care",brand:"Maison Margiela",name:"REPLICA - By the Fireplace (Memory in a Body Lotion)",size:"200 ml",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Burning wood and chestnut (Chamonix, 1971), hydrating luxury pump lotion."},
+  {code:"BODY-004",category:"Body Care",brand:"CHANEL",name:"GABRIELLE CHANEL - Emulsion Hydratante pour le Corps",size:"200 ml",qty:1,status:"In Use",mfg:"-",exp:"PAO:18M",notes:"Luminous floral fragrance moisturizing body lotion."},
+  {code:"BODY-005",category:"Body Care",brand:"Suu Balm",name:"Ceramide Moisturiser Rapid Itch Relief",size:"350 ml",qty:1,status:"Opened",mfg:"-",exp:"PAO:12M",notes:"Formulated by National Skin Centre, Singapore; 5 ceramides + cooling menthol."},
+  {code:"HAND-006",category:"Hand Care",brand:"L'Occitane",name:"Amande Mains a Croquer / Delicious Hands",size:"30 ml",qty:1,status:"In Use",mfg:"-",exp:"PAO:12M",notes:"Almond milk & oil hand & nail care cream."},
+  {code:"HAND-007",category:"Hand Care",brand:"Qingzhi (青稚)",name:"Hand Cream - Feb 9 Myrtle (香桃木 · 2月9日)",size:"Round Metal Tin",qty:1,status:"In Use",mfg:"-",exp:"~3Y unopened",notes:"Birthday calendar series: February 9 Myrtle (蕙质、勤劳)."},
+  {code:"EYE-003",category:"Eye Care",brand:"O-fresh",name:"Contact Lens Moist Cushion Drop",size:"30 ml",qty:1,status:"Unopened",mfg:"-",exp:"PAO stamped",notes:"Lubricates and rewets soft contact lenses for comfort and clarity."},
+];
+
+// ── State ──
+let products = [];
+let activityLog = [];
+let activeStatFilter = "all"; // all | Unopened | In Use | Opened | Discarded | expiring
+let activeCat = "all";
+let viewMode = "grid";
+
+function loadData() {
+  try {
+    const s = localStorage.getItem(STORE_KEY);
+    products = s ? JSON.parse(s) : JSON.parse(JSON.stringify(SEED));
+    const l = localStorage.getItem(LOG_KEY);
+    activityLog = l ? JSON.parse(l) : [];
+  } catch(e) {
+    products = JSON.parse(JSON.stringify(SEED));
+    activityLog = [];
+  }
+}
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(products)); } catch(e){}
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); } catch(e){}
+}
+
+function statusNorm(s) {
+  if (!s) return "Unopened";
+  if (s === "Discarded") return "Discarded";
+  if (s.includes("In Use")) return "In Use";
+  if (s.includes("Opened") && !s.includes("In Use")) return "Opened";
+  return "Unopened";
+}
+
+function expiryInfo(exp) {
+  if (!exp || exp === "-") return {cls:"expiry-unknown",icon:"❓",label:"No date"};
+  if (exp.startsWith("PAO")) {
+    const m = exp.match(/(\d+)M/);
+    return {cls:"expiry-pao",icon:"⏳",label: m ? `PAO ${m[1]}M after opening` : "PAO (see notes)"};
+  }
+  if (exp.includes("~") || exp.includes("stamped") || exp.toLowerCase().includes("standard")) {
+    return {cls:"expiry-pao",icon:"⏳",label:exp};
+  }
+  const d = new Date(exp);
+  if (isNaN(d)) return {cls:"expiry-unknown",icon:"❓",label:exp};
+  const diff = (d - TODAY) / 86400000;
+  if (diff < 0) return {cls:"expiry-expired",icon:"🚫",label:`Expired ${d.toLocaleDateString("en-GB",{month:"short",year:"numeric"})}`};
+  if (diff < SOON_DAYS) return {cls:"expiry-soon",icon:"⚠️",label:`Exp ${d.toLocaleDateString("en-GB",{month:"short",year:"numeric"})} · ${Math.floor(diff)}d left`};
+  return {cls:"expiry-ok",icon:"✅",label:`Exp ${d.toLocaleDateString("en-GB",{month:"short",year:"numeric"})}`};
+}
+
+function statusBadgeClass(s) {
+  const n = statusNorm(s);
+  return "status-"+n.replace(/ /g,"-");
+}
+function statusEmoji(s) {
+  const n = statusNorm(s);
+  if (n==="Unopened") return "🔒";
+  if (n==="In Use") return "💜";
+  if (n==="Discarded") return "🗑";
+  return "✨";
+}
+
+function logAction(action, product, cls) {
+  const now = new Date();
+  const timeStr = now.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " " +
+    now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  activityLog.unshift({action, product: `${product.brand} · ${product.name}`, time: timeStr, cls});
+  if (activityLog.length > 50) activityLog.pop();
+  save();
+  renderLog();
+}
+
+// ── Stats ──
+function buildStats() {
+  const active = products.filter(p => statusNorm(p.status) !== "Discarded");
+  const total = active.length;
+  const unopened = active.filter(p=>statusNorm(p.status)==="Unopened").length;
+  const inuse = active.filter(p=>statusNorm(p.status)==="In Use").length;
+  const opened = active.filter(p=>statusNorm(p.status)==="Opened").length;
+  const discarded = products.filter(p=>statusNorm(p.status)==="Discarded").length;
+  const expiringSoon = active.filter(p=>{
+    const d=new Date(p.exp); if(isNaN(d)) return false;
+    return (d-TODAY)/86400000 < SOON_DAYS && (d-TODAY)/86400000 >= 0;
+  }).length;
+
+  const cards = [
+    {key:"all",    num:total,       lbl:"Products",      color:"var(--rose)"},
+    {key:"Unopened",num:unopened,   lbl:"Unopened",      color:"var(--green)"},
+    {key:"In Use", num:inuse,       lbl:"In Use",        color:"var(--purple)"},
+    {key:"Opened", num:opened,      lbl:"Opened",        color:"var(--amber)"},
+    {key:"Discarded",num:discarded, lbl:"Discarded",     color:"var(--grey)"},
+    {key:"expiring",num:expiringSoon,lbl:"Expiring Soon",color:expiringSoon>0?"var(--red)":"var(--green)"},
+  ];
+
+  document.getElementById("stats").innerHTML = cards.map(c=>`
+    <div class="stat-card${activeStatFilter===c.key?" active-stat":""}" onclick="setStatFilter('${c.key}')">
+      <div class="num" style="color:${c.color}">${c.num}</div>
+      <div class="lbl">${c.lbl}</div>
+    </div>
+  `).join("");
+}
+
+function setStatFilter(key) {
+  activeStatFilter = key;
+  buildStats();
+  render();
+}
+
+// ── Category filters ──
+function buildCatFilters() {
+  const cats = [...new Set(products.map(p=>p.category))].sort();
+  const el = document.getElementById("catFilters");
+  el.innerHTML = `<button class="filter-btn${activeCat==="all"?" active":""}" onclick="setCat('all')">All</button>` +
+    cats.map(c=>`<button class="filter-btn${activeCat===c?" active":""}" onclick="setCat('${c.replace(/'/g,"&#39;")}')">${c}</button>`).join("");
+}
+function setCat(c) { activeCat=c; buildCatFilters(); render(); }
+
+// ── View ──
+function setView(v) {
+  viewMode = v;
+  document.getElementById("gridView").classList.toggle("hidden", v!=="grid");
+  document.getElementById("listView").classList.toggle("hidden", v!=="list");
+  document.getElementById("btnGrid").classList.toggle("active", v==="grid");
+  document.getElementById("btnList").classList.toggle("active", v==="list");
+}
+
+// ── Filter & render ──
+function getFiltered() {
+  const q = document.getElementById("search").value.toLowerCase();
+  return products.filter(p => {
+    const sn = statusNorm(p.status);
+    if (activeStatFilter === "expiring") {
+      const d = new Date(p.exp);
+      if (isNaN(d) || (d-TODAY)/86400000 < 0 || (d-TODAY)/86400000 >= SOON_DAYS) return false;
+    } else if (activeStatFilter !== "all" && sn !== activeStatFilter) return false;
+    if (activeCat !== "all" && p.category !== activeCat) return false;
+    if (q) {
+      const hay = `${p.brand} ${p.name} ${p.category} ${p.notes||""} ${p.code}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function actionBtns(code, sn) {
+  const p = products.find(x=>x.code===code);
+  if (!p) return "";
+  if (sn === "Discarded") {
+    return `<button class="act-btn act-restore" onclick="restoreItem('${code}')">↩ Restore</button>
+            <button class="act-btn act-delete" onclick="deleteItem('${code}')">🗑 Delete</button>`;
+  }
+  let btns = "";
+  if (sn !== "In Use") btns += `<button class="act-btn act-inuse" onclick="markInUse('${code}')">💜 Mark In Use</button>`;
+  btns += `<button class="act-btn act-discard" onclick="markDiscarded('${code}')">🗑 Discard</button>`;
+  btns += `<button class="act-btn act-delete" onclick="deleteItem('${code}')">✕ Delete</button>`;
+  return btns;
+}
+
+function render() {
+  const filtered = getFiltered();
+  document.getElementById("itemCount").textContent = filtered.length;
+
+  // Grid
+  const gv = document.getElementById("gridView");
+  if (filtered.length === 0) {
+    gv.innerHTML = `<div class="no-results">No products match your filters 🌸</div>`;
+  } else {
+    gv.innerHTML = filtered.map(p => {
+      const ei = expiryInfo(p.exp);
+      const sn = statusNorm(p.status);
+      return `<div class="card${sn==="Discarded"?" discarded":""}">
+        <div class="card-top">
+          <span class="card-code">${p.code}</span>
+          <span class="status-badge ${statusBadgeClass(p.status)}">${statusEmoji(p.status)} ${sn}</span>
+        </div>
+        <div class="card-brand">${esc(p.brand)}</div>
+        <div class="card-name">${esc(p.name)}</div>
+        <div class="card-cat">${esc(p.category)}</div>
+        <div class="meta-row">
+          <span class="meta-pill">📦 ×${p.qty}</span>
+          <span class="meta-pill">📐 ${esc(p.size)}</span>
+          ${p.mfg&&p.mfg!=="-"?`<span class="meta-pill">🏭 ${esc(p.mfg)}</span>`:""}
+        </div>
+        <div class="expiry-bar ${ei.cls}"><span>${ei.icon}</span><span>${ei.label}</span></div>
+        ${p.notes?`<div class="card-notes">${esc(p.notes)}</div>`:""}
+        <div class="card-actions">${actionBtns(p.code, sn)}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // List
+  const lv = document.getElementById("listView");
+  if (filtered.length === 0) {
+    lv.innerHTML = `<div class="no-results">No products match your filters 🌸</div>`;
+  } else {
+    lv.innerHTML = `<table>
+      <thead><tr>
+        <th>Code</th><th>Brand</th><th>Product</th><th>Category</th>
+        <th>Qty</th><th>Status</th><th>Expiry</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${filtered.map(p=>{
+        const ei = expiryInfo(p.exp);
+        const sn = statusNorm(p.status);
+        const isDiscard = sn==="Discarded";
+        return `<tr class="${isDiscard?"discarded":""}">
+          <td><code style="font-size:.72rem;color:var(--muted)">${p.code}</code></td>
+          <td style="font-weight:600;color:var(--rose);font-size:.8rem">${esc(p.brand)}</td>
+          <td style="max-width:220px">${esc(p.name)}</td>
+          <td style="font-size:.78rem;color:var(--muted);font-style:italic">${esc(p.category)}</td>
+          <td style="text-align:center">${p.qty}</td>
+          <td><span class="status-badge ${statusBadgeClass(p.status)}">${statusEmoji(p.status)} ${sn}</span></td>
+          <td><span style="font-size:.78rem" class="${ei.cls.replace("expiry-","")}">${ei.icon} ${ei.label}</span></td>
+          <td>
+            <div class="tbl-actions">
+              ${isDiscard
+                ? `<button class="tbl-btn restore" onclick="restoreItem('${p.code}')">↩</button>
+                   <button class="tbl-btn del" onclick="deleteItem('${p.code}')">🗑</button>`
+                : `${sn!=="In Use"?`<button class="tbl-btn inuse" onclick="markInUse('${p.code}')">💜</button>`:""}
+                   <button class="tbl-btn discard" onclick="markDiscarded('${p.code}')">🗑</button>
+                   <button class="tbl-btn del" onclick="deleteItem('${p.code}')">✕</button>`
+              }
+            </div>
+          </td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table>`;
+  }
+}
+
+// ── Actions ──
+function markInUse(code) {
+  const p = products.find(x=>x.code===code);
+  if (!p) return;
+  p.status = "In Use";
+  logAction("Marked In Use", p, "log-action-inuse");
+  save(); buildStats(); buildCatFilters(); render();
+}
+function markDiscarded(code) {
+  const p = products.find(x=>x.code===code);
+  if (!p) return;
+  p.status = "Discarded";
+  logAction("Discarded", p, "log-action-discard");
+  save(); buildStats(); render();
+}
+function restoreItem(code) {
+  const p = products.find(x=>x.code===code);
+  if (!p) return;
+  p.status = "Opened";
+  logAction("Restored to Opened", p, "log-action-reopen");
+  save(); buildStats(); render();
+}
+function deleteItem(code) {
+  const p = products.find(x=>x.code===code);
+  if (!p) return;
+  if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+  logAction("Deleted", p, "log-action-delete");
+  products = products.filter(x=>x.code!==code);
+  save(); buildStats(); buildCatFilters(); render();
+}
+
+// ── Add product ──
+function openModal() { document.getElementById("modalOverlay").classList.add("open"); }
+function closeModal() { document.getElementById("modalOverlay").classList.remove("open"); }
+
+document.getElementById("modalOverlay").addEventListener("click", function(e){
+  if (e.target === this) closeModal();
+});
+
+function autoCode(cat) {
+  const prefixes = {
+    "Body Care":"BODY","Eye Care":"EYE","Facial Cleanser":"SKIN","Facial Mask":"SKIN",
+    "Hair Care":"HAIR","Hand Care":"HAND","Makeup Remover":"SKIN","Moisturizer / Cream":"SKIN",
+    "Spot Treatment":"SKIN","Sunscreen / Primer":"SUN","Toner / Sheet Treatment":"SKIN","Other":"PROD"
+  };
+  const prefix = prefixes[cat] || "PROD";
+  const existing = products.filter(p=>p.code.startsWith(prefix)).map(p=>parseInt(p.code.split("-")[1])||0);
+  const next = (Math.max(0,...existing) + 1).toString().padStart(3,"0");
+  return `${prefix}-${next}`;
+}
+
+function addProduct() {
+  const cat = document.getElementById("f-category").value;
+  const brand = document.getElementById("f-brand").value.trim();
+  const name = document.getElementById("f-name").value.trim();
+  if (!brand || !name) { alert("Brand and Product Name are required."); return; }
+  const code = document.getElementById("f-code").value.trim() || autoCode(cat);
+  const p = {
+    code, category: cat, brand, name,
+    size: document.getElementById("f-size").value.trim() || "-",
+    qty: parseInt(document.getElementById("f-qty").value) || 1,
+    status: document.getElementById("f-status").value,
+    mfg: document.getElementById("f-mfg").value.trim() || "-",
+    exp: document.getElementById("f-exp").value.trim() || "-",
+    notes: document.getElementById("f-notes").value.trim(),
+  };
+  products.push(p);
+  logAction("Added", p, "log-action-add");
+  save(); buildStats(); buildCatFilters(); render();
+  // reset form
+  ["f-code","f-brand","f-name","f-size","f-mfg","f-exp","f-notes"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("f-qty").value="1";
+  closeModal();
+}
+
+// ── Log ──
+function toggleLog() { document.getElementById("logPanel").classList.toggle("open"); renderLog(); }
+function renderLog() {
+  const el = document.getElementById("logBody");
+  if (!activityLog.length) {
+    el.innerHTML = `<div class="log-empty">No activity yet 🌸</div>`;
+    return;
+  }
+  el.innerHTML = activityLog.map(e=>`
+    <div class="log-entry">
+      <span class="log-action ${e.cls}">${e.action}</span> — ${esc(e.product)}
+      <div class="log-time">${e.time}</div>
+    </div>
+  `).join("");
+}
+function clearLog() { activityLog=[]; save(); renderLog(); }
+
+// ── Search ──
+document.getElementById("search").addEventListener("input", render);
+
+// ── Utility ──
+function esc(s){ const d=document.createElement("div"); d.textContent=s||""; return d.innerHTML; }
+
+// ── Init ──
+loadData();
+buildStats();
+buildCatFilters();
+render();
+</script>
+</body>
+</html>
